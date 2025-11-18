@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 class FixedDifferentialDriveMPC:
     def __init__(self):
         # 控制参数
-        self.T = 0.2  # 控制周期
-        self.N = 20   # 预测时域
+        self.T = 0.1  # 控制周期
+        self.N =5   # 预测时域
         
         # 机器人参数
         self.radius = 2.0  # 圆形轨迹半径
@@ -76,7 +76,7 @@ class FixedDifferentialDriveMPC:
                 dy = y_ref - y_prev
                 
                 if abs(dx) < 1e-6 and abs(dy) < 1e-6:
-                    theta_ref = prev_theta  # 避免除零
+                    theta_ref = prev_theta  
                 else:
                     theta_ref = np.arctan2(dy, dx)
 
@@ -85,8 +85,6 @@ class FixedDifferentialDriveMPC:
             
             ref_traj.append(np.array([x_ref, y_ref, theta_ref]))
             
-            # 参考控制 - 计算需要的线速度和角速度
-            # 线速度基于轨迹长度，角速度基于曲率
             if k < self.N:
                 # 计算下一个点用于曲率估计
                 t_next = (current_step + k + 1) * self.T
@@ -98,8 +96,6 @@ class FixedDifferentialDriveMPC:
                 dy1 = y_ref - y_prev if k > 0 else amplitude * frequency * np.cos(frequency * t)
                 dx2 = x_next - x_ref
                 dy2 = y_next - y_ref
-                
-                # 曲率 = (Δθ)/Δs
                 theta1 = np.arctan2(dy1, dx1)
                 theta2 = np.arctan2(dy2, dx2)
                 delta_theta = self.normalize_angle(theta2 - theta1)
@@ -109,16 +105,12 @@ class FixedDifferentialDriveMPC:
                     curvature = delta_theta / delta_s
                 else:
                     curvature = 0
-                
-                # 参考控制
                 v_ref = speed
                 w_ref = v_ref * curvature
             else:
-                # 最后一个点，使用近似值
+               
                 v_ref = speed
                 w_ref = 0
-            
-            # 应用控制约束
             v_ref = np.clip(v_ref, self.v_min, self.v_max)
             w_ref = np.clip(w_ref, self.w_min, self.w_max)
             
@@ -183,12 +175,14 @@ class FixedDifferentialDriveMPC:
             cost = 0
             
             for k in range(self.N):
-
-                A_k, B_k, O_k = self.get_linearized_matrices( ref_traj[k], ref_controls[k])
-
+                if(k==0):
+                    A_k, B_k, O_k = self.get_linearized_matrices(current_state, ref_controls[k])
+                else:
+                    A_k, B_k, O_k = self.get_linearized_matrices( ref_traj[k], ref_controls[k])
                 constraints.append(states[k+1] == A_k @ states[k] + B_k @ controls[k] + O_k)
 
                 state_error = states[k] - ref_traj[k]
+               
                 control_error = controls[k] - ref_controls[k]
                 
                 cost += cp.quad_form(state_error, self.Q)
@@ -226,12 +220,11 @@ class FixedDifferentialDriveMPC:
         x, y, theta = state
         v, w = control
         
-        # 非线性动力学模型
+
         x_new = x + v * np.cos(theta) * dt
         y_new = y + v * np.sin(theta) * dt
         theta_new = theta + w * dt
-        
-        # 角度归一化
+     
         theta_new = self.normalize_angle(theta_new)
         
         return np.array([x_new, y_new, theta_new])
@@ -243,12 +236,10 @@ class FixedDifferentialDriveMPC:
         x, y, theta = state
         v, w = control
         
-        # 非线性动力学模型
         x_new = x + v * np.cos(theta) * dt
         y_new = y + v * np.sin(theta) * dt
         theta_new = theta + w * dt
-        
-        # 角度归一化
+
         theta_new = self.normalize_angle(theta_new)
         
         return np.array([x_new, y_new, theta_new])
@@ -261,11 +252,11 @@ class FixedDifferentialDriveMPC:
         failure_count = 0
         
         for step in range(simulation_steps):
-            # 获取参考轨迹
+            
             ref_traj, ref_controls = self.get_reference_trajectory(step)
             self.reference_trajectory.append(ref_traj[0])
 
-            # 求解MPC
+          
             control, predicted_states = self.solve_mpc(self.state, ref_traj, ref_controls)
             
             if control is not None:
@@ -273,8 +264,7 @@ class FixedDifferentialDriveMPC:
             else:
                 failure_count += 1
                 control = ref_controls[0].copy()
-            
-            # 存储控制历史
+
             self.control_history.append(control.copy())
             
             # 应用控制输入
@@ -361,13 +351,13 @@ class FixedDifferentialDriveMPC:
         print(f"最大位置误差: {np.max(position_error[:min_len]):.4f} m")
 
 def main():
-    # 创建修复的MPC控制器
+
     mpc_controller = FixedDifferentialDriveMPC()
     
-    # 运行仿真
+
     mpc_controller.run_simulation(simulation_steps=500)
     
-    # 绘制结果
+
     mpc_controller.plot_results()
 
 if __name__ == "__main__":

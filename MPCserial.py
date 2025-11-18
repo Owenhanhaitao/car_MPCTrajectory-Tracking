@@ -15,8 +15,8 @@ class STM32MPCController:
         self.is_connected = False
         
         # 控制参数
-        self.T = 0.05  # 控制周期 (50ms)
-        self.N = 10    # 预测时域
+        self.T = 0.1  # 控制周期 (50ms)
+        self.N = 5    # 预测时域
         
         # 轨迹参数
         self.amplitude = 1.0
@@ -153,12 +153,12 @@ class STM32MPCController:
         try:
             # 这里需要根据您的实际状态反馈协议来实现
             # 示例：假设STM32会发送位置和姿态数据
-            if self.ser.in_waiting >= 12:  # 假设状态数据包长度为12字节
-                data = self.ser.read(12)
+            if self.ser.in_waiting >= 14:  # 假设状态数据包长度为12字节
+                data = self.ser.read(14)
                 
                 # 解析状态数据 (需要根据实际协议调整)
                 # 示例协议: 0xCC + x(4字节) + y(4字节) + theta(4字节) + 0xDD
-                if data[0] == 0xCC and data[11] == 0xDD:
+                if data[0] == 0xCC and data[13] == 0xDD:
                     x = struct.unpack('f', data[1:5])[0]  # 4字节float
                     y = struct.unpack('f', data[5:9])[0]  # 4字节float
                     theta = struct.unpack('f', data[9:13])[0]  # 4字节float
@@ -255,7 +255,10 @@ class STM32MPCController:
             cost = 0
             
             for k in range(self.N):
-                A_k, B_k, O_k = self.get_linearized_matrices(ref_traj[k], ref_controls[k])
+                if(k==0):
+                    A_k, B_k, O_k = self.get_linearized_matrices(current_state, ref_controls[k])
+                else:
+                    A_k, B_k, O_k = self.get_linearized_matrices( ref_traj[k], ref_controls[k])
                 
                 # 系统动力学约束
                 constraints.append(states[k+1] == A_k @ states[k] + B_k @ controls[k] + O_k)
