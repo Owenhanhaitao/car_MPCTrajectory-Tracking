@@ -7,7 +7,7 @@ from queue import Queue
 import struct
 
 class STM32MPCController:
-    def __init__(self, port='COM3', baudrate=115200):
+    def __init__(self, port='/dev/ttyS1', baudrate=115200):
         # 串口通信参数
         self.ser = None
         self.port = port
@@ -179,7 +179,7 @@ class STM32MPCController:
         """状态估计线程"""
         while self.running:
             self.receive_state_data()
-            time.sleep(0.01)  # 10ms更新周期
+            time.sleep(0.02)  # 10ms更新周期
     
     def get_reference_trajectory(self, current_step):
         """生成参考轨迹"""
