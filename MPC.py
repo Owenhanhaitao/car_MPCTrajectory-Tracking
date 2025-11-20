@@ -23,10 +23,10 @@ class FixedDifferentialDriveMPC:
         self.w_max = 1
         self.w_min = -1
         self.trajectory_type = "polynomial"
-        self.poly_coeffs = [2.5, 0.3, 0.02, 0.0045]  # 多项式系数 [a0, a1, a2, a3]
+        self.poly_coeffs = [0, 0, 0.2, 0.05]  # 多项式系数 [a0, a1, a2, a3]
         self.poly_speed = 0.2  # 多项式轨迹前进速度
         # 初始状态 [x, y, theta]
-        self.state = np.array([1, 1.0, 0.0])
+        self.state = np.array([0 ,0, 0.0])
         
         # 存储轨迹
         self.actual_trajectory = [self.state.copy()]
@@ -441,10 +441,10 @@ def main():
     mpc_controller = FixedDifferentialDriveMPC()
     
 
-    mpc_controller.run_simulation(simulation_steps=500)
+    mpc_controller.run_simulation(simulation_steps=100)
     
 
     mpc_controller.plot_results()
-
+ 
 if __name__ == "__main__":
     main()
