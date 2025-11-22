@@ -23,7 +23,7 @@ class FixedDifferentialDriveMPC:
         self.w_max = 1
         self.w_min = -1
         self.trajectory_type = "polynomial"
-        self.poly_coeffs = [0, 0, 0.2, 0.05]  # 多项式系数 [a0, a1, a2, a3]
+        self.poly_coeffs = [0, 1, 0, 0.05]  # 多项式系数 [a0, a1, a2, a3]
         self.poly_speed = 0.2  # 多项式轨迹前进速度
         # 初始状态 [x, y, theta]
         self.state = np.array([0 ,0, 0.0])
@@ -113,6 +113,7 @@ class FixedDifferentialDriveMPC:
                     theta_ref = prev_theta
                 else:
                     theta_ref = np.arctan2(dy_dt, dx_dt)
+                print(theta_ref)
                     
                 if t == 0:
                     self.theta_init = theta_ref
